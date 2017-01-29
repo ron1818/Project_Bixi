@@ -26,40 +26,47 @@ def nothing(x):
 #### canny edge function ####
 def canny_masking(hsv_mask, threshold1=100, threshold2=200, is_dynamic=False):
     """ take a mask and return an edge """
-    if is_dynamic:
+    if is_dynamic:  # with track bar
+        # create trackbar on the window
         canny_hough_trackwindow(threshold1, threshold2)
         while (1):
             threshold1 = cv2.getTrackbarPos('Th_min', 'edge')
             threshold2 = cv2.getTrackbarPos('Th_max', 'edge')
+            # find canny edge
             mask = cv2.Canny(hsv_mask, threshold1, threshold2,
                              L2gradient=True)
+            # show the edge
             cv2.imshow("edge", mask)
             k = cv2.waitKey(1) & 0xFF
             if k == 27:
                 break
-    else:
+    else:  # with predefined thresholds
         mask = cv2.Canny(hsv_mask, threshold1, threshold2,
                          L2gradient=True)
     return mask, threshold1, threshold2
 
 
-def hough_line_detection(img, mask, hsv_mask, thresholdHough=40, minLineLength=10,
-                    maxLineGap=5, is_dynamic=False, is_probabilistic=True):
+def hough_line_detection(img, mask, hsv_mask, thresholdHough=40,
+                         minLineLength=10, maxLineGap=5, is_dynamic=False,
+                         is_probabilistic=True):
     """ hough line detection """
-    if is_probabilistic:
-        if is_dynamic:
-            hsv_masked_img = cv2.bitwise_and(img, img, mask=hsv_mask)
+    if is_probabilistic:  # probabilistic hough line
+        if is_dynamic:  # with track bar
+            # create track bar
             canny_hough_trackwindow(None, None,
                                     thresholdHough, minLineLength, maxLineGap)
             while (1):
+                # mask hsv to original img
+                hsv_masked_img = cv2.bitwise_and(img, img, mask=hsv_mask)
                 # prob. hough lines
                 thresholdHough = cv2.getTrackbarPos('Th_Hough', 'edge')
-                minLineLength = cv2.getTrackbarPos('min_Linelength_Hough', 'edge')
+                minLineLength = cv2.getTrackbarPos('min_Linelength_Hough',
+                                                   'edge')
                 maxLineGap = cv2.getTrackbarPos('max_Linegap', 'edge')
                 lines = cv2.HoughLinesP(mask.copy(), 1, np.pi/180,
-                                       thresholdHough, minLineLength,
-                                       maxLineGap)
-                try:
+                                        thresholdHough, minLineLength,
+                                        maxLineGap)
+                try:  # in case no line is detected
                     print lines.shape
                     for l in lines:
                         for x1, y1, x2, y2 in l:
@@ -70,7 +77,7 @@ def hough_line_detection(img, mask, hsv_mask, thresholdHough=40, minLineLength=1
                 k = cv2.waitKey(1) & 0xFF
                 if k == 27:
                     break
-        else:
+        else:  # predefined thresholds
             hsv_masked_img = cv2.bitwise_and(img, img, mask=hsv_mask)
             lines = cv2.HoughLinesP(mask.copy(), 1, np.pi/180,
                                     thresholdHough, minLineLength,
@@ -84,8 +91,8 @@ def hough_line_detection(img, mask, hsv_mask, thresholdHough=40, minLineLength=1
                 pass
             cv2.imshow("edge", hsv_masked_img)
             cv2.waitKey(0)
-    else:
-        if is_dynamic:
+    else:  # normal hough line detection
+        if is_dynamic:  # with track bar
             canny_hough_trackwindow(None, None,
                                     thresholdHough, minLineLength, maxLineGap)
             while (1):
@@ -112,7 +119,7 @@ def hough_line_detection(img, mask, hsv_mask, thresholdHough=40, minLineLength=1
                 k = cv2.waitKey(1) & 0xFF
                 if k == 27:
                     break
-        else:
+        else:  # predefined thresholds
             hsv_masked_img = cv2.bitwise_and(img, img, mask=hsv_mask)
             lines = cv2.HoughLinesP(mask.copy(), 1, np.pi/180,
                                     thresholdHough, minLineLength,
@@ -192,8 +199,9 @@ def hsv_trackwindow(colorname="blue"):
 def hsv_masking(img, colorname="blue", is_dynamic=False):
     """ masking color image by color """
 
+    # convert from BGR to HSV
     img_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-    if is_dynamic:
+    if is_dynamic:  # with trackbar
         hsv_trackwindow(colorname)
         while (1):
             hsv_mask = cv2.inRange(img_hsv,
@@ -208,7 +216,7 @@ def hsv_masking(img, colorname="blue", is_dynamic=False):
             k = cv2.waitKey(1) & 0xFF
             if k == 27:
                 break
-    else:
+    else:  # predefined color
         if colorname == "blue":
             hsv_mask = cv2.inRange(img_hsv, lower_blue, upper_blue)
         elif colorname == "green":
@@ -220,54 +228,71 @@ def hsv_masking(img, colorname="blue", is_dynamic=False):
 
 
 #### contour detector ####
-def find_contour(mask):
+def find_contour(img, mask, is_max=True):
+    """ find contours and moments for the edge """
     # find all contours
     hierarchy, contours, _ = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL,
                                             cv2.CHAIN_APPROX_SIMPLE)
 
     # save the moments
+    features = {"area": list(),
+                "arclength": list(),
+                "M": list(),
+                "mass_center": list(),
+                "aspect_ratio": list(),
+                "rect_area": list(),
+                "extent": list(),
+                "circle_center": list(),
+                "solidity": list()}
     for i, cnt in enumerate(contours):
         print 'no: ', i
         # area and perimeter
-        area = cv2.contourArea(cnt)
-        print 'area: ', area
-        arclength = cv2.arcLength(cnt, True)
-        print 'arc length: ', arclength
+        features["area"].append(cv2.contourArea(cnt))
+        print 'area: ', features["area"][i]
+        features["arclength"].append(cv2.arcLength(cnt, True))
+        print 'arc length: ', features["arclength"][i]
         # centroid
-        M = cv2.moments(cnt)
-        centroid_x = int(M['m10']/M['m00'])
-        centroid_y = int(M['m01']/M['m00'])
-        print 'centroid: ', (centroid_x, centroid_y)
-        cv2.circle(img, (centroid_x, centroid_y), 1, (0, 0, 255), -1)
+        features["M"].append(cv2.moments(cnt))
+        centroid_x = int(features["M"][i]['m10']/features["M"][i]['m00'])
+        centroid_y = int(features["M"][i]['m01']/features["M"][i]['m00'])
+        features["mass_center"].append((centroid_x, centroid_y))
+        print 'centroid: ', features["mass_center"][i]
+        # draw the mass center
+        cv2.circle(img, features["mass_center"][i], 1, (0, 0, 255), -1)
         # aspect ratio
         rect = cv2.minAreaRect(cnt)
         (x, y), (w, h), angle = rect
-        aspect_ratio = float(w) / h
-        print 'aspect ratio: ', aspect_ratio
+        features["aspect_ratio"].append(float(w) / h)
+        print 'aspect ratio: ', features["aspect_ratio"][i]
         # extent
-        rect_area = w * h
-        extent = float(area) / rect_area
-        print "extent: ", extent
+        features["rect_area"].append(w * h)
+        features["extent"].append(features["area"][i] /
+                                  features["rect_area"][i])
+        print "extent: ", features["extent"]
         box = cv2.boxPoints(rect)
         box = np.int0(box)
+        # draw min area rect
         cv2.drawContours(img, [box], 0, (0, 0, 255), 1)
         # mimimum enclosing circle
         (x, y), radius = cv2.minEnclosingCircle(cnt)
-        center = (int(x),int(y))
+        center = (int(x), int(y))
+        features["circle_center"].append(center)
         radius = int(radius)
-        print 'circle_center: ', center
+        print 'circle_center: ', features["circle_center"][i]
+        # draw min enclosing circle
         cv2.circle(img, center, 1, (255, 0, 255), -1)
-        # cv2.circle(img, center, radius, (0,255,0), 2)
+        cv2.circle(img, center, radius, (255, 0, 255), 1)
         # solidity
         hull = cv2.convexHull(cnt)
         hull_area = cv2.contourArea(hull)
-        solidity = float(area) / hull_area
-        print 'solidity: ', solidity
+        features["solidity"].append(float(features["area"][i]) / hull_area)
+        print 'solidity: ', features["solidity"][i]
         # orientation
         ellipse = cv2.fitEllipse(cnt)
         (x, y), (MA, ma), angle = ellipse
         print 'orientation: ', angle
         print 'ellipse center: ', (x, y)
+        # draw boundign ellipse
         cv2.ellipse(img, ellipse, (0, 0, 255), 1)
 
         cv2.imshow("image", img)
