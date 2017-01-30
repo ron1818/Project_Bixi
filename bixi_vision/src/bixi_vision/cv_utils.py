@@ -18,12 +18,13 @@ upper_blue = np.array([130, 255, 255])
 lower_green = np.array([25, 50, 75])
 upper_green = np.array([75, 255, 255])
 
+
 # void function for edge detector
 def nothing(x):
     pass
 
 
-#### canny edge function ####
+# #### canny edge function ####
 def canny_masking(hsv_mask, threshold1=100, threshold2=200, is_dynamic=False):
     """ take a mask and return an edge """
     if is_dynamic:  # with track bar
@@ -70,7 +71,8 @@ def hough_line_detection(img, mask, hsv_mask, thresholdHough=40,
                     print lines.shape
                     for l in lines:
                         for x1, y1, x2, y2 in l:
-                            cv2.line(hsv_masked_img, (x1, y1), (x2, y2), (0,255,0), 2)
+                            cv2.line(hsv_masked_img, (x1, y1), (x2, y2),
+                                     (0, 255, 0), 2)
                 except:
                     pass
                 cv2.imshow("edge", hsv_masked_img)
@@ -86,7 +88,8 @@ def hough_line_detection(img, mask, hsv_mask, thresholdHough=40,
                 print lines.shape
                 for l in lines:
                     for x1, y1, x2, y2 in l:
-                        cv2.line(hsv_masked_img, (x1, y1), (x2, y2), (0,255,0), 2)
+                        cv2.line(hsv_masked_img, (x1, y1), (x2, y2),
+                                 (0, 255, 0), 2)
             except:
                 pass
             cv2.imshow("edge", hsv_masked_img)
@@ -112,7 +115,8 @@ def hough_line_detection(img, mask, hsv_mask, thresholdHough=40,
                             y1 = int(y0 + 1000*(a))
                             x2 = int(x0 - 1000*(-b))
                             y2 = int(y0 - 1000*(a))
-                            cv2.line(hsv_masked_img, (x1,y1), (x2,y2), (0,255,0), 2)
+                            cv2.line(hsv_masked_img, (x1, y1), (x2, y2),
+                                     (0, 255, 0), 2)
                 except:
                     pass
                 cv2.imshow("edge", hsv_masked_img)
@@ -136,7 +140,8 @@ def hough_line_detection(img, mask, hsv_mask, thresholdHough=40,
                         y1 = int(y0 + 1000*(a))
                         x2 = int(x0 - 1000*(-b))
                         y2 = int(y0 - 1000*(a))
-                        cv2.line(hsv_masked_img, (x1,y1), (x2,y2), (0,255,0), 2)
+                        cv2.line(hsv_masked_img, (x1, y1), (x2, y2),
+                                 (0, 255, 0), 2)
             except:
                 pass
             cv2.imshow("edge", hsv_masked_img)
@@ -148,26 +153,27 @@ def canny_hough_trackwindow(threshold1=None, threshold2=None,
                             maxLineGap=None):
     """create track window for canny and hough"""
     # debugging use for user to dynamic change the thresholds
-    if threshold1 == None:
+    if threshold1 is None:
         threshold1 = 100
-    if threshold2 == None:
+    if threshold2 is None:
         threshold2 = 200
-    if thresholdHough == None:
+    if thresholdHough is None:
         thresholdHough = 40
-    if minLineLength == None:
+    if minLineLength is None:
         minLineLength = 10
-    if maxLineGap == None:
+    if maxLineGap is None:
         maxLineGap = 5
 
     cv2.namedWindow("edge")
     cv2.createTrackbar('Th_min', 'edge', threshold1, 255, nothing)
     cv2.createTrackbar('Th_max', 'edge', threshold2, 255, nothing)
     cv2.createTrackbar('Th_Hough', 'edge', thresholdHough, 200, nothing)
-    cv2.createTrackbar('min_Linelength_Hough', 'edge', minLineLength, 200, nothing)
+    cv2.createTrackbar('min_Linelength_Hough', 'edge', minLineLength,
+                       200, nothing)
     cv2.createTrackbar('max_Linegap', 'edge', maxLineGap, 100, nothing)
 
 
-#### hsv ####
+# #### hsv ####
 def hsv_trackwindow(colorname="blue"):
     """ tracked window for hsv thresholding """
 
@@ -227,12 +233,12 @@ def hsv_masking(img, colorname="blue", is_dynamic=False):
     return hsv_mask
 
 
-#### contour detector ####
+# #### contour detector ####
 def find_contour(img, mask, is_max=True):
     """ find contours and moments for the edge """
     # find all contours
     hierarchy, contours, _ = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL,
-                                            cv2.CHAIN_APPROX_SIMPLE)
+                                              cv2.CHAIN_APPROX_SIMPLE)
 
     # save the moments
     features = {"area": list(),

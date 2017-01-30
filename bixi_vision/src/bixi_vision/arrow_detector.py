@@ -6,15 +6,15 @@ changelog:
 """
 
 import cv2
-import numpy as np
+# import numpy as np
 from cv_utils import *
 
 
-## main ##
+# ## main ##
 # picture folder
 image_path = "image/blue_right.png"
 
-#### load picture ####
+# #### load picture ####
 img = cv2.imread(image_path, 1)
 threshold1 = 100
 threshold2 = 200
