@@ -64,7 +64,7 @@ def hough_line_detection(img, mask, hsv_mask, thresholdHough=40,
                 minLineLength = cv2.getTrackbarPos('min_Linelength_Hough',
                                                    'edge')
                 maxLineGap = cv2.getTrackbarPos('max_Linegap', 'edge')
-                lines = cv2.HoughLinesP(mask.copy(), 1, np.pi/180,
+                lines = cv2.HoughLinesP(mask.copy(), 1, np.pi / 180,
                                         thresholdHough, minLineLength,
                                         maxLineGap)
                 try:  # in case no line is detected
@@ -81,7 +81,7 @@ def hough_line_detection(img, mask, hsv_mask, thresholdHough=40,
                     break
         else:  # predefined thresholds
             hsv_masked_img = cv2.bitwise_and(img, img, mask=hsv_mask)
-            lines = cv2.HoughLinesP(mask.copy(), 1, np.pi/180,
+            lines = cv2.HoughLinesP(mask.copy(), 1, np.pi / 180,
                                     thresholdHough, minLineLength,
                                     maxLineGap)
             try:
@@ -100,7 +100,7 @@ def hough_line_detection(img, mask, hsv_mask, thresholdHough=40,
                                     thresholdHough, minLineLength, maxLineGap)
             while (1):
                 hsv_masked_img = cv2.bitwise_and(img, img, mask=hsv_mask)
-                lines = cv2.HoughLinesP(mask.copy(), 1, np.pi/180,
+                lines = cv2.HoughLinesP(mask.copy(), 1, np.pi / 180,
                                         thresholdHough, minLineLength,
                                         maxLineGap)
                 try:
@@ -109,12 +109,12 @@ def hough_line_detection(img, mask, hsv_mask, thresholdHough=40,
                         for rho, theta in l:
                             a = np.cos(theta)
                             b = np.sin(theta)
-                            x0 = a*rho
-                            y0 = b*rho
-                            x1 = int(x0 + 1000*(-b))
-                            y1 = int(y0 + 1000*(a))
-                            x2 = int(x0 - 1000*(-b))
-                            y2 = int(y0 - 1000*(a))
+                            x0 = a * rho
+                            y0 = b * rho
+                            x1 = int(x0 + 1000 * (-b))
+                            y1 = int(y0 + 1000 * (a))
+                            x2 = int(x0 - 1000 * (-b))
+                            y2 = int(y0 - 1000 * (a))
                             cv2.line(hsv_masked_img, (x1, y1), (x2, y2),
                                      (0, 255, 0), 2)
                 except:
@@ -125,7 +125,7 @@ def hough_line_detection(img, mask, hsv_mask, thresholdHough=40,
                     break
         else:  # predefined thresholds
             hsv_masked_img = cv2.bitwise_and(img, img, mask=hsv_mask)
-            lines = cv2.HoughLinesP(mask.copy(), 1, np.pi/180,
+            lines = cv2.HoughLinesP(mask.copy(), 1, np.pi / 180,
                                     thresholdHough, minLineLength,
                                     maxLineGap)
             try:
@@ -134,12 +134,12 @@ def hough_line_detection(img, mask, hsv_mask, thresholdHough=40,
                     for rho, theta in l:
                         a = np.cos(theta)
                         b = np.sin(theta)
-                        x0 = a*rho
-                        y0 = b*rho
-                        x1 = int(x0 + 1000*(-b))
-                        y1 = int(y0 + 1000*(a))
-                        x2 = int(x0 - 1000*(-b))
-                        y2 = int(y0 - 1000*(a))
+                        x0 = a * rho
+                        y0 = b * rho
+                        x1 = int(x0 + 1000 * (-b))
+                        y1 = int(y0 + 1000 * (a))
+                        x2 = int(x0 - 1000 * (-b))
+                        y2 = int(y0 - 1000 * (a))
                         cv2.line(hsv_masked_img, (x1, y1), (x2, y2),
                                  (0, 255, 0), 2)
             except:
@@ -259,8 +259,8 @@ def find_contour(img, mask, is_max=True):
         print 'arc length: ', features["arclength"][i]
         # centroid
         features["M"].append(cv2.moments(cnt))
-        centroid_x = int(features["M"][i]['m10']/features["M"][i]['m00'])
-        centroid_y = int(features["M"][i]['m01']/features["M"][i]['m00'])
+        centroid_x = int(features["M"][i]['m10'] / features["M"][i]['m00'])
+        centroid_y = int(features["M"][i]['m01'] / features["M"][i]['m00'])
         features["mass_center"].append((centroid_x, centroid_y))
         print 'centroid: ', features["mass_center"][i]
         # draw the mass center
@@ -303,3 +303,28 @@ def find_contour(img, mask, is_max=True):
 
         cv2.imshow("image", img)
         cv2.waitKey(0)
+    if is_max:
+        return features, np.argmax(features["area"])
+    else:
+        return features, len(features)
+
+
+def find_keypoint(mask, maxCorners=10, qualityLevel=0.01, minDistance=5):
+    """ find keypoint using good features """
+    corners = cv2.goodFeaturesToTrack(mask, maxCorners,
+                                      qualityLevel, minDistance)
+    corners = np.int0(corners)
+    for i in corners:
+        x, y = i.ravel()
+        cv2.circle(mask, (x, y), 3, (0, 255, 0), -1)
+
+    cv2.imshow("mask", mask)
+    cv2.waitKey(0)
+    return corners
+
+
+def cal_direction(circle_center, keypoint_center):
+    cx, cy = circle_center
+    kx, ky = keypoint_center
+
+    return np.arctan2((ky - cy), (kx - cx))
