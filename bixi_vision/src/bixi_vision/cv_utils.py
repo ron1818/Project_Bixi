@@ -230,6 +230,7 @@ def hsv_masking(img, colorname="blue", is_dynamic=False):
         elif colorname == "red":
             hsv_mask = cv2.inRange(img_hsv, lower_red1, upper_red1) + \
                 cv2.inRange(img_hsv, lower_red2, upper_red2)
+        cv2.imshow("hsv", hsv_mask)
     return hsv_mask
 
 
@@ -278,7 +279,7 @@ def find_contour(img, mask, is_max=True):
         box = cv2.boxPoints(rect)
         box = np.int0(box)
         # draw min area rect
-        cv2.drawContours(img, [box], 0, (0, 0, 255), 1)
+        # cv2.drawContours(img, [box], 0, (0, 0, 255), 1)
         # mimimum enclosing circle
         (x, y), radius = cv2.minEnclosingCircle(cnt)
         center = (int(x), int(y))
@@ -287,12 +288,19 @@ def find_contour(img, mask, is_max=True):
         print 'circle_center: ', features["circle_center"][i]
         # draw min enclosing circle
         cv2.circle(img, center, 1, (255, 0, 255), -1)
-        cv2.circle(img, center, radius, (255, 0, 255), 1)
+        # cv2.circle(img, center, radius, (255, 0, 255), 1)
         # solidity
         hull = cv2.convexHull(cnt)
         hull_area = cv2.contourArea(hull)
+        hull_m = cv2.moments(hull)
+        hull_x = int(hull_m['m10'] / hull_m['m00'])
+        hull_y = int(hull_m['m01'] / hull_m['m00'])
         features["solidity"].append(float(features["area"][i]) / hull_area)
+        print 'hull center: ', (hull_x, hull_y)
         print 'solidity: ', features["solidity"][i]
+        cv2.drawContours(img, [hull], 0, [0, 255, 0], 1)
+        cv2.circle(img, (hull_x, hull_y), 1, (0, 255, 0), -1)
+
         # orientation
         ellipse = cv2.fitEllipse(cnt)
         (x, y), (MA, ma), angle = ellipse
@@ -300,30 +308,87 @@ def find_contour(img, mask, is_max=True):
         print 'ellipse center: ', (x, y)
         # draw boundign ellipse
         cv2.ellipse(img, ellipse, (0, 0, 255), 1)
+        cv2.circle(img, (int(x), int(y)), 1, (0, 0, 255), -1)
 
         cv2.imshow("image", img)
-        cv2.waitKey(0)
     if is_max:
         return features, np.argmax(features["area"])
     else:
         return features, len(features)
 
 
-def find_keypoint(mask, maxCorners=10, qualityLevel=0.01, minDistance=5):
+def find_good_keypoint(img, mask,
+                       maxCorners=10, qualityLevel=0.01, minDistance=5,
+                       is_dynamic=False):
     """ find keypoint using good features """
-    corners = cv2.goodFeaturesToTrack(mask, maxCorners,
-                                      qualityLevel, minDistance)
-    corners = np.int0(corners)
-    for i in corners:
-        x, y = i.ravel()
-        cv2.circle(mask, (x, y), 3, (0, 255, 0), -1)
+    if is_dynamic:
+        kpt_trackwindow(maxCorners, int(qualityLevel * 100), minDistance)
+        condition = True
+        while (condition):
+            maxc = cv2.getTrackbarPos("maxC", "kpt")
+            mind = cv2.getTrackbarPos("minD", "kpt")
+            qlvl = cv2.getTrackbarPos("qLvl", "kpt") / 100.0
+            corners = cv2.goodFeaturesToTrack(mask, maxc, qlvl, mind)
+            corners = np.int0(corners)
+            for i in corners:
+                x, y = i.ravel()
+                cv2.circle(img, (x, y), 3, (0, 255, 255), 1)
 
-    cv2.imshow("mask", mask)
-    cv2.waitKey(0)
-    return corners
+            cv2.imshow("kpt", img)
+            k = cv2.waitKey(1) & 0xFF
+            if k == 27:
+                condition = False
+        else:
+            gd_x = sum([i.ravel()[0] for i in corners]) / len(corners)
+            gd_y = sum([i.ravel()[1] for i in corners]) / len(corners)
+    else:
+        maxc = maxCorners
+        mind = qualityLevel
+        qlvl = minDistance
+        corners = cv2.goodFeaturesToTrack(mask, maxc, qlvl, mind)
+        corners = np.int0(corners)
+        gd_x = sum([i.ravel()[0] for i in corners]) / len(corners)
+        gd_y = sum([i.ravel()[1] for i in corners]) / len(corners)
+        print "good center: ", (gd_x, gd_y)
+        cv2.circle(img, (gd_x, gd_y), 2, (0, 255, 255), -1)
+
+        for i in corners:
+            x, y = i.ravel()
+            cv2.circle(img, (x, y), 3, (0, 255, 255), 1)
+
+        cv2.imshow("kpt", img)
+    return (gd_x, gd_y), corners
+
+
+def find_orb_keypoint(img, mask):
+
+    # orb keypoint detection
+    orb = cv2.ORB_create(edgeThreshold=25, patchSize=31, nlevels=8,
+                         fastThreshold=20, scaleFactor=1.2,
+                         WTA_K=2, scoreType=cv2.ORB_FAST_SCORE,
+                         firstLevel=0, nfeatures=500)
+    kp = orb.detect(mask)
+    kp_x = sum([i.pt[0] for i in kp]) / len(kp)
+    kp_y = sum([i.pt[1] for i in kp]) / len(kp)
+
+    img2 = cv2.drawKeypoints(img, kp, None, color=(0, 255, 0), flags=0)
+    cv2.imshow("kpt", img2)
+    return (kp_x, kp_y)
+
+
+def kpt_trackwindow(maxCorners=10, qualityLevel=1, minDistance=5):
+    """ tracked window for hsv thresholding """
+
+    # convert to hsv and do color filtering
+    cv2.namedWindow("kpt")
+    cv2.createTrackbar('maxC', 'kpt', maxCorners, 15, nothing)
+    cv2.createTrackbar('qLvl', 'kpt', qualityLevel, 100, nothing)
+    cv2.createTrackbar('minD', 'kpt', minDistance, 50, nothing)
 
 
 def cal_direction(circle_center, keypoint_center):
+    """ use keypoint center and min enclosing circle center
+    to calculate the direction """
     cx, cy = circle_center
     kx, ky = keypoint_center
 
