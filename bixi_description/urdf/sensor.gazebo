@@ -1,0 +1,35 @@
+<xml version="1.0"?>
+<robot name="sensors" xmlns:xacro="http://ros.org/wiki/xacro" >
+    <xacro:property name="M_PI" value="3.1415926535897931" />
+    <!-- IMU Link is the standard mounting position for the UM6 IMU.-->
+    <gazebo reference="imu_link">
+        <plugin name="imu" filename="libhector_gazebo_ros_imu.so">
+            <robotNamespace>/</robotNamespace>
+            <updateRate>20.0</updateRate>
+            <frameId>imu_link</frameId>
+            <bodyName>base_link</bodyName>
+            <topicName>imu/data</topicName>
+            <serviceName>imu</serviceName>
+            <xyzOffset>0 0 0</xyzOffset>
+            <rpyOffset>0 0 -${M_PI/2}</rpyOffset>
+            <gaussianNoise>0</gaussianNoise>
+            <accelDrift>0.005 0.005 0.005</accelDrift>
+            <accelGaussianNoise>0.35 0.35 0.3</accelGaussianNoise>
+            <rateDrift>0.0001 0.0001 0.0001</rateDrift>
+            <rateGaussianNoise>0.05 0.05 0.015</rateGaussianNoise>
+            <headingDrift>0.0001</headingDrift>
+            <headingGaussianNoise>0.05</headingGaussianNoise>
+            </plugin>
+    </gazebo>
+    <gazebo>
+        <plugin name="mag" filename="libhector_gazebo_ros_magnetic.so">
+            <robotNamespace>/</robotNamespace>
+            <updateRate>20.0</updateRate>
+            <frameId>imu_link</frameId>
+            <bodyName>base_link</bodyName>
+            <topicName>imu/mag</topicName>
+            <declination>0.0043</declination>
+            <inclination>0.0</inclination>
+        </plugin>
+    </gazebo>
+</xacro>
