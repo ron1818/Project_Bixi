@@ -1,0 +1,20 @@
+image_width: 720
+image_height: 480
+camera_name: runcam2
+camera_matrix:
+  rows: 3
+  cols: 3
+  data: [463.0193695141878, 0, 358.633282121551, 0, 413.5297957689417, 252.3638967661948, 0, 0, 1]
+distortion_model: plumb_bob
+distortion_coefficients:
+  rows: 1
+  cols: 5
+  data: [-0.2626575046435046, 0.08185828563769655, 0.001330267570126294, -0.0002063959526940855, 0]
+rectification_matrix:
+  rows: 3
+  cols: 3
+  data: [1, 0, 0, 0, 1, 0, 0, 0, 1]
+projection_matrix:
+  rows: 3
+  cols: 4
+  data: [385.2448120117188, 0, 357.3478622660987, 0, 0, 373.3104248046875, 255.3021037977451, 0, 0, 0, 1, 0]

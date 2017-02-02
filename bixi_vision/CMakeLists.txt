@@ -7,7 +7,6 @@ project(bixi_vision)
 find_package(catkin REQUIRED COMPONENTS
   cv_bridge
   image_transport
-  opencv
   roscpp
   rospy
   sensor_msgs
