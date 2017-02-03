@@ -1,0 +1,55 @@
+<?xml version="1.0"?>
+<!-- conveyor on top of car -->
+<robot name="bixi" xmlns:xacro="http://www.ros.org/wiki/xacro">
+    <xacro:property name="M_PI" value="3.1415926535897931"/>
+
+    <!-- Base Size -->
+    <property name="conv_x_size" value="0.7" />
+    <property name="conv_y_size" value="0.22" />
+    <property name="conv_z_size" value="0.2" />
+    <property name="base_z_size" value="0.2" />
+    <link name="conveyor_link">
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="package://bixi_description/meshes/conveyor.dae" scale="0.01 0.01 0.01" />
+            </geometry>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <box size="${plow_x_size} ${plow_y_size} ${plow_z_size}"/>
+            </geometry>
+        </collision>
+        <!--collision>
+            <origin xyz="0 0 ${base_z_size*3/4}" rpy="0 0 0" />
+            <geometry>
+                <box size="${base_x_size*4/5} ${base_y_size} ${base_z_size/2}"/>
+            </geometry>
+        </collision-->
+        <inertial>
+            <mass value="${base_mass}" />
+            <origin xyz="0 0 0" />
+            <inertia ixx="${1/12*base_mass*(base_x_size*base_x_size + base_z_size*base_z_size)}"
+                iyy="${1/12*base_mass*(base_y_size*base_y_size + base_z_size*base_z_size)}"
+                izz="${1/12*base_mass*(base_y_size*base_y_size + base_x_size*base_x_size)}"
+                ixy="0" ixz="0" iyz="0" />
+        </inertial>
+    </link>
+    <link name="conveyor_extend_link">
+    </link>
+
+    <joint name="conveyor_joint" type="revolute">
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <parent link="base_link" />
+        <child link="conveyor_link" />
+        <axis xyz="0 1 0" />
+    </joint>
+    <joint name="conveyor_extend_joint" type="prismatic">
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <parent link="conveyor_link" />
+        <child link="conveyor_extend_link" />
+        <axis xyz="-1 0 0" />
+    </joint>
+
+</robot>
