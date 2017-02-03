@@ -7,26 +7,24 @@
 
     <!-- Base Size -->
     <property name="base_mass" value="10" />
-    <property name="base_x_size" value="0.98740000" />
-    <property name="base_y_size" value="0.57090000" />
-    <property name="base_z_size" value="0.24750000" />
+    <property name="base_x_size" value="0.8" />
+    <property name="base_y_size" value="0.4" />
+    <property name="base_z_size" value="0.1" />
 
     <!-- Wheel Mounting Positions -->
-    <xacro:property name="wheelbase" value="0.5120" />
-    <xacro:property name="track" value="0.5708" />
-    <xacro:property name="wheel_vertical_offset" value="0.03282" />
+    <xacro:property name="wheelbase" value="0.6" />
+    <xacro:property name="track" value="0.6" />
+    <xacro:property name="wheel_vertical_offset" value="0.05" />
 
     <!-- Wheel Properties -->
-    <xacro:property name="wheel_mass" value="0.258" />
-    <xacro:property name="wheel_length" value="0.1143" />
-    <xacro:property name="wheel_radius" value="0.17775" />
+    <xacro:property name="wheel_radius" value="0.075" />
 
     <!-- base link is the center of the robot's bottom plate -->
     <link name="base_link">
         <visual>
             <origin xyz="0 0 0" rpy="0 0 0" />
             <geometry>
-                <mesh filename="package://bixi_description/meshes/chasis.dae" scale="0.001 0.001 0.001" />
+                <mesh filename="package://bixi_description/meshes/chasis.dae" scale="1 1 1" />
             </geometry>
         </visual>
         <collision>
@@ -55,23 +53,23 @@
     <link name="base_footprint"/>
 
     <joint name="base_footprint_joint" type="fixed">
-        <origin xyz="0 0 ${wheel_vertical_offset - wheel_radius}" rpy="0 0 0" />
-        <parent link="base_link" />
-        <child link="base_footprint" />
+        <origin xyz="0 0 ${wheel_vertical_offset+wheel_radius}" rpy="0 0 0" />
+        <parent link="base_footprint" />
+        <child link="base_link" />
     </joint>
 
     <!-- Husky wheel macros -->
     <xacro:wheel ccw="1" wheel_prefix="front_left">
-        <origin xyz="${wheelbase/2} ${track/2} ${wheel_vertical_offset}" rpy="0 0 0" />
+        <origin xyz="${wheelbase/2} ${track/2} -${wheel_vertical_offset}" rpy="0 0 0" />
     </xacro:wheel>
     <xacro:wheel ccw="0" wheel_prefix="front_right">
-        <origin xyz="${wheelbase/2} ${-track/2} ${wheel_vertical_offset}" rpy="0 0 0" />
+        <origin xyz="${wheelbase/2} ${-track/2} -${wheel_vertical_offset}" rpy="0 0 0" />
     </xacro:wheel>
-    <xacro:wheel ccw="1" wheel_prefix="rear_left">
-        <origin xyz="${-wheelbase/2} ${track/2} ${wheel_vertical_offset}" rpy="0 0 0" />
+    <xacro:wheel ccw="0" wheel_prefix="rear_left">
+        <origin xyz="${-wheelbase/2} ${track/2} -${wheel_vertical_offset}" rpy="0 0 0" />
     </xacro:wheel>
-    <xacro:wheel ccw="0" wheel_prefix="rear_right">
-        <origin xyz="${-wheelbase/2} ${-track/2} ${wheel_vertical_offset}" rpy="0 0 0" />
+    <xacro:wheel ccw="1" wheel_prefix="rear_right">
+        <origin xyz="${-wheelbase/2} ${-track/2} -${wheel_vertical_offset}" rpy="0 0 0" />
     </xacro:wheel>
 
 </robot>
