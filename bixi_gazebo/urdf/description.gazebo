@@ -2,6 +2,13 @@
 <!-- modified by ren ye on 2016-07-22 -->
 
 <robot name="bixi" xmlns:xacro="http://www.ros.org/wiki/xacro" >
+    <xacro:include filename="$(find bixi_description)/urdf/standard.urdf.xacro" />
+
+    <gazebo>
+        <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
+            <robotNamespace>/</robotNamespace>
+        </plugin>
+    </gazebo>
     <gazebo reference="base_link">
         <material>Gazebo/Green</material>
         <turnGravityOff>false</turnGravityOff>
