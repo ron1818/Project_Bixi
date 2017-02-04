@@ -13,7 +13,7 @@
 
     <!-- Wheel Mounting Positions -->
     <xacro:property name="wheelbase" value="0.6" />
-    <xacro:property name="track" value="0.6" />
+    <xacro:property name="track" value="0.55" />
     <xacro:property name="wheel_vertical_offset" value="0.05" />
 
     <!-- Wheel Properties -->
@@ -33,12 +33,6 @@
                 <box size="${base_x_size} ${base_y_size} ${base_z_size}"/>
             </geometry>
         </collision>
-        <!--collision>
-            <origin xyz="0 0 ${base_z_size*3/4}" rpy="0 0 0" />
-            <geometry>
-                <box size="${base_x_size*4/5} ${base_y_size} ${base_z_size/2}"/>
-            </geometry>
-        </collision-->
         <inertial>
             <mass value="${base_mass}" />
             <origin xyz="0 0 0" />

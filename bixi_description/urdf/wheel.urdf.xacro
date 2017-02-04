@@ -3,7 +3,7 @@
     <!-- Wheel Properties -->
     <xacro:property name="M_PI" value="3.1415926535897931"/>
     <xacro:property name="wheel_mass" value="0.158" />
-    <xacro:property name="wheel_length" value="0.02" />
+    <xacro:property name="wheel_length" value="0.05" />
     <xacro:property name="wheel_radius" value="0.075" />
     <xacro:macro name="wheel" params="ccw wheel_prefix *joint_pose">
         <link name="${wheel_prefix}_wheel_link">
@@ -19,11 +19,11 @@
                 <origin xyz="0 0 0" rpy="0 0 0" />
                 <geometry>
                     <xacro:unless value="${ccw == 0}">
-                    <mesh filename="package://bixi_description/meshes/mecanum_left.dae" scale="0.001 0.001 0.001"/>
-                </xacro:unless>
+                        <mesh filename="package://bixi_description/meshes/mec_f_l.dae" scale="1 1 1"/>
+                    </xacro:unless>
                     <xacro:if value="${ccw == 0}">
-                    <mesh filename="package://bixi_description/meshes/mecanum_right.dae" scale="0.001 0.001 0.001"/>
-                </xacro:if>
+                        <mesh filename="package://bixi_description/meshes/mec_f_r.dae" scale="1 1 1"/>
+                    </xacro:if>
                 </geometry>
             </visual>
             <collision>
