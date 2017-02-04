@@ -8,6 +8,8 @@
     <!-- Import all Gazebo-customization elements, including Gazebo colors -->
     <xacro:include filename="materials.xacro" />
     <xacro:include filename="base.urdf.xacro" />
+    <xacro:include filename="accessories/plow.urdf.xacro" />
+    <xacro:include filename="accessories/conveyor.urdf.xacro" />
     <!--xacro:include filename="base.gazebo" />
     <xacro:include filename="sensor.urdf.xacro" />
     <xacro:include filename="sensor.gazebo" /-->

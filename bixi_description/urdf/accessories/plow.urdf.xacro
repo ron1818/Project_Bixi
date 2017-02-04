@@ -4,15 +4,17 @@
     <xacro:property name="M_PI" value="3.1415926535897931"/>
 
     <!-- Base Size -->
+    <property name="plow_mass" value="0.2" />
     <property name="plow_x_size" value="0.02" />
     <property name="plow_y_size" value="0.45" />
     <property name="plow_z_size" value="0.2" />
     <property name="base_x_size" value="0.8" />
-<link name="plow_link">
-    <visual>
+
+    <link name="plow_link">
+        <visual>
             <origin xyz="0 0 0" rpy="0 0 0" />
             <geometry>
-                <mesh filename="package://bixi_description/meshes/plow.dae" scale="0.01 0.01 0.01" />
+                <mesh filename="package://bixi_description/meshes/plow.dae" scale="1 1 1" />
             </geometry>
         </visual>
         <collision>
@@ -21,23 +23,18 @@
                 <box size="${plow_x_size} ${plow_y_size} ${plow_z_size}"/>
             </geometry>
         </collision>
-        <!--collision>
-            <origin xyz="0 0 ${base_z_size*3/4}" rpy="0 0 0" />
-            <geometry>
-                <box size="${base_x_size*4/5} ${base_y_size} ${base_z_size/2}"/>
-            </geometry>
-        </collision-->
         <inertial>
-            <mass value="${base_mass}" />
+            <mass value="${plow_mass}" />
             <origin xyz="0 0 0" />
-            <inertia ixx="${1/12*base_mass*(base_x_size*base_x_size + base_z_size*base_z_size)}"
-                iyy="${1/12*base_mass*(base_y_size*base_y_size + base_z_size*base_z_size)}"
-                izz="${1/12*base_mass*(base_y_size*base_y_size + base_x_size*base_x_size)}"
+            <inertia ixx="${1/12*plow_mass*(plow_x_size*plow_x_size + plow_z_size*plow_z_size)}"
+                iyy="${1/12*plow_mass*(plow_y_size*plow_y_size + plow_z_size*plow_z_size)}"
+                izz="${1/12*plow_mass*(plow_y_size*plow_y_size + plow_x_size*plow_x_size)}"
                 ixy="0" ixz="0" iyz="0" />
         </inertial>
     </link>
+
     <joint name="plow_joint" type="fixed">
-        <origin xyz="0 ${base_x_size/2+plow_x_size/2} 0" rpy="0 0 0" />
+        <origin xyz="${base_x_size/2+plow_x_size/2} 0 0" rpy="0 0 0" />
         <parent link="base_link" />
         <child link="plow_link" />
     </joint>
