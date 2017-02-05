@@ -49,9 +49,10 @@
             <axis xyz="0 1 0" rpy="0 0 0" />
         </joint>
 
-        <transmission name="${wheel_prefix}_wheel_trans" type="SimpleTransmission">
+        <transmission name="${wheel_prefix}_wheel_trans">
             <type>transmission_interface/SimpleTransmission</type>
             <actuator name="${wheel_prefix}_wheel_motor">
+                <hardwareInterface>VelocityJointInterface</hardwareInterface>
                 <mechanicalReduction>1</mechanicalReduction>
             </actuator>
             <joint name="${wheel_prefix}_wheel">
