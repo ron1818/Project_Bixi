@@ -9,7 +9,7 @@
             <robotNamespace>/</robotNamespace>
         </plugin>
     </gazebo>
-    <gazebo reference="base_link">
+    <!--gazebo reference="base_link">
         <material>Gazebo/Green</material>
         <turnGravityOff>false</turnGravityOff>
     </gazebo>
@@ -25,6 +25,6 @@
     </gazebo>
     <gazebo reference="rear_right_wheel_link">
         <material>Gazebo/Grey</material>
-    </gazebo>
+    </gazebo-->
 
 </robot>
