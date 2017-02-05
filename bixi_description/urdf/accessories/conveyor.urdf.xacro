@@ -13,7 +13,7 @@
         <visual>
             <origin xyz="-${conv_x_size/2} 0 0" rpy="0 0 0" />
             <geometry>
-                <mesh filename="package://bixi_description/meshes/conveyor.dae" scale="1.64 3.28 3.28" />
+                <mesh filename="package://bixi_description/meshes/conveyor.dae" scale="3.28 3.28 3.28" />
             </geometry>
         </visual>
         <collision>
@@ -35,7 +35,7 @@
         <visual>
             <origin xyz="-${conv_x_size/2} 0 0" rpy="0 0 0" />
             <geometry>
-                <mesh filename="package://bixi_description/meshes/conveyor_extend.dae" scale="1.64 3.28 3.28" />
+                <mesh filename="package://bixi_description/meshes/conveyor_extend.dae" scale="3.28 3.28 3.28" />
             </geometry>
         </visual>
         <collision>
@@ -68,5 +68,27 @@
         <axis xyz="-1 0 0" />
         <limit lower="-0.35" upper="0.35" effort="10" velocity="0.1" />
     </joint>
+
+    <transmission name="tran_conveyor">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="conveyor_joint">
+            <hardwareInterface>EffortJointInterface</hardwareInterface>
+        </joint>
+        <actuator name="conveyor_motor">
+            <hardwareInterface>EffortJointInterface</hardwareInterface>
+            <mechanicalReduction>1</mechanicalReduction>
+        </actuator>
+    </transmission>
+
+    <transmission name="tran_conveyor_extend">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="conveyor_extend_joint">
+            <hardwareInterface>EffortJointInterface</hardwareInterface>
+        </joint>
+        <actuator name="conveyor_extend_motor">
+            <hardwareInterface>EffortJointInterface</hardwareInterface>
+            <mechanicalReduction>1</mechanicalReduction>
+        </actuator>
+    </transmission>
 
 </robot>
