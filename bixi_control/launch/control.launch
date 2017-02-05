@@ -3,7 +3,7 @@
 
   <rosparam command="load" file="$(find bixi_control)/config/control.yaml" />
 
-  <node name="base_controller_spawner" pkg="controller_manager" type="spawner" args="bixi_joint_publisher bixi_velocity_controller --shutdown-timeout 3"/>
+  <node name="base_controller_spawner" pkg="controller_manager" type="spawner" args="bixi_joint_publisher conveyor_joint_position_controller conveyor_extend_position_controller bixi_velocity_controller --shutdown-timeout 3"/>
 
   <!--node pkg="robot_localization" type="ekf_localization_node" name="ekf_localization">
     <rosparam command="load" file="$(find husky_control)/config/localization.yaml" />
