@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 
 """ Reinaldo
-    3-11-16
-
+    26-02-17
+    Calibrated for RPLIDAR
+    cable side=x
+    z is to sky
 """
 import rospy
 import actionlib
@@ -21,7 +23,7 @@ from visualization_msgs.msg import Marker
 class DetectSquare(object):
     x0, y0, yaw0= 0, 0, 0
     currentScan=LaserScan()
-    box_length=1
+    box_length=0.5
 
     def __init__(self, nodename):
         rospy.init_node(nodename, anonymous=False)
@@ -29,7 +31,7 @@ class DetectSquare(object):
         self.initMarker()
 
         rospy.Subscriber("/odometry/filtered", Odometry, self.odom_callback, queue_size = 50)
-        rospy.Subscriber("/front/scan", LaserScan, self.scanCallback, queue_size = 50)
+        rospy.Subscriber("/scan", LaserScan, self.scanCallback, queue_size = 50)
 
         rate=rospy.Rate(10)
     
@@ -39,7 +41,7 @@ class DetectSquare(object):
             rate.sleep()
 
     def scanCallback(self, msg):
-        window_length=10
+        window_length=2
         resolution=0.05
         size=window_length/resolution
         mid_point=int(size/2)
@@ -48,7 +50,7 @@ class DetectSquare(object):
 
         for i in range(len(msg.ranges)):
             if msg.ranges[i]<window_length/2:
-                theta=i*msg.angle_increment-math.pi/4
+                theta=i*msg.angle_increment#-math.pi/4
                 d=msg.ranges[i]
                 x=int(d*math.cos(theta)/resolution)+mid_point
                 y=int(d*math.sin(theta)/resolution)+mid_point
@@ -56,18 +58,20 @@ class DetectSquare(object):
                 laserGrid[x][y]=1
         
         self.boxes_position=self.detectBox(laserGrid, resolution)
+        print(self.boxes_position)
 
-
+        #self.printBox([[0, 1]])
         self.printBox(self.boxes_position)
 
     def detectBox(self, grid, resolution):
         origin=int(grid.shape[0]/2)
+
         #extract lines in rolling window
         rho = 1 # distance resolution in pixels of the Hough grid
         theta = np.pi/180 # angular resolution in radians of the Hough grid
-        threshold = 10    # minimum number of votes (intersections in Hough grid cell)
-        min_line_length = 10 #minimum number of pixels making up a line
-        max_line_gap = 30    # maximum gap in pixels between connectable line segments
+        threshold = 10 # minimum number of votes (intersections in Hough grid cell)
+        min_line_length = 8 # minimum number of pixels making up a line
+        max_line_gap = 2   # maximum gap in pixels between connectable line segments
         tolerance=0.1
         # Run Hough on edge detected image
         # Output "lines" is an array containing endpoints of detected line segments
@@ -78,18 +82,19 @@ class DetectSquare(object):
             return None
 
         for line in lines:
-            for x1,y1,x2,y2 in line:
 
+            for x1,y1,x2,y2 in line:
+                print(line)
                 if math.sqrt((x2-x1)**2+(y2-y1)**2)>self.box_length-tolerance or math.sqrt((x2-x1)**2+(y2-y1)**2)<self.box_length+tolerance:
                     #this is box's edge
                     d=self.box_length/(2*resolution)
                     theta=math.atan2(x2-x1, y2-y1)+math.pi/2 #angle of mid-center
                     #print(x1, y1)
                     #print(x2, y2)
-                    y_mid=(x2+x1)/2
-                    x_mid=(y2+y1)/2
+                    x_mid=(x2+x1)/2
+                    y_mid=(y2+y1)/2
                     #extract center
-
+                    print(x_mid, y_mid)
                     del_y=d*math.sin(theta)
                     del_x=d*math.cos(theta)
 
@@ -106,10 +111,11 @@ class DetectSquare(object):
                     a=(x_c-origin)*resolution
                     b=(y_c-origin)*resolution
 
-                    
-                    boxes.append([self.x0+a*math.sin(self.yaw0)+b*math.cos(self.yaw0), self.y0-a*math.cos(self.yaw0)+b*math.sin(self.yaw0)])
-                    #boxes.append([self.x0+(x_mid-origin)*resolution, self.y0+(y_mid-origin)*resolution])
+                    #print(self.x0+(x_mid-origin)*resolution, self.y0+(y_mid-origin)*resolution)
+                    #boxes.append([self.x0+a*math.sin(self.yaw0)+b*math.cos(self.yaw0), self.y0-a*math.cos(self.yaw0)+b*math.sin(self.yaw0)])
+                    boxes.append([self.x0+(origin-y_mid)*resolution, self.y0+(origin-x_mid)*resolution])
 
+        
         #print("boxes position:", boxes)
         #return global positions of boxes
         return boxes
