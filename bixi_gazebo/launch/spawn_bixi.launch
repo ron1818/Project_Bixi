@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<launch>
+
+  <!--arg name="laser_enabled" default="true"/>
+  <arg name="ur5_enabled" default="false"/>
+  <arg name="kinect_enabled" default="false"/>
+  <arg name="robot_initial_pose" default="$(optenv ROBOT_INITIAL_POSE)"/>
+  <arg name="husky_gazebo_description" default="$(optenv HUSKY_GAZEBO_DESCRIPTION)"/>
+  <arg name="ur5_control_yaml_file" default="$(find husky_control)/config/control_ur5.yaml"/-->
+
+  <param name="robot_description" command="$(find xacro)/xacro.py '$(find bixi_gazebo)/urdf/description.gazebo' " />
+
+  <include file="$(find gazebo_ros)/launch/empty_world.launch" >
+  </include>
+
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" />
+  <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" >
+      <param name="use_gui" value="true"/>
+  </node>
+
+  <!-- Spawn robot in gazebo -->
+  <node name="spawn_bixi_model" pkg="gazebo_ros" type="spawn_model"
+    args="-unpause -urdf -param robot_description -model mobile_base"/>
+
+
+</launch>
