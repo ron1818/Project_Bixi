@@ -4,6 +4,7 @@ import rospy
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Point, Pose, Quaternion, Twist, Vector3
 import tf
+import math
 
 if __name__ == '__main__':
     rospy.init_node('lasertf_broadcaster')
@@ -25,13 +26,13 @@ if __name__ == '__main__':
     # set the velocity
     odom.child_frame_id = "base_link"
     odom.twist.twist = Twist(Vector3(0, 0, 0), Vector3(0, 0, 0))
-    r = rospy.Rate(1.0)
+    r = rospy.Rate(10)
 
     while not rospy.is_shutdown():
 
         br = tf.TransformBroadcaster()
         br.sendTransform((0, 0, 0),
-                         tf.transformations.quaternion_from_euler(0, 0, 0),
+                         tf.transformations.quaternion_from_euler(0, math.pi, math.pi),
                          rospy.Time.now(),
                          "laser",
                          "base_link")

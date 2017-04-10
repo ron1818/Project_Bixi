@@ -31,7 +31,6 @@ class DetectSquare(object):
 
         rospy.Subscriber("/odometry/filtered", Odometry, self.odom_callback, queue_size = 50)
         rospy.Subscriber("/scan", LaserScan, self.scanCallback, queue_size = 50)
-        self.box_pose_pub=rospy.Publisher("/box_pose", Odometry, queue_size=10)
 
         rate=rospy.Rate(10)
     
@@ -41,10 +40,10 @@ class DetectSquare(object):
             rate.sleep()
 
     def scanCallback(self, msg):
-        window_length=10
+        window_length=4
 
         resolution=0.01
-        res=resolution*1
+        res=resolution*4
         size=window_length/resolution
         self.mid_point=int(size/2)
         #print(self.mid_point)
@@ -78,28 +77,22 @@ class DetectSquare(object):
                     py=int(d*math.sin(theta)/resolution)+mid_point
 
                     laserGrid[px][py]=1   
-        higher_reso = laserGrid
+        higher_reso = cv2.pyrUp(cv2.pyrUp(laserGrid))
         self.boxes_position=self.detectBox(higher_reso, resolution)
         self.printBox(self.boxes_position)
 
-
     def detectBox(self, grid, resolution):
-        msg=Odometry()
-        msg.header.frame_id = "map"
-        msg.child_frame_id = "odom"
         origin=int(grid.shape[0]/2)
         #extract lines in rolling window
         rho = 1 # distance resolution in pixels of the Hough grid
         theta = np.pi/180 # angular resolution in radians of the Hough grid
-        threshold = 10 # minimum number of votes (intersections in Hough grid cell)
+        threshold = 8 # minimum number of votes (intersections in Hough grid cell)
         min_line_length = 5 # minimum number of pixels making up a line
-        max_line_gap = 50  # maximum gap in pixels between connectable line segments
-        tolerance=0.05
+        max_line_gap = 20/resolution  # maximum gap in pixels between connectable line segments
+        tolerance=0.01
         # Run Hough on edge detected image
         # Output "lines" is an array containing endpoints of detected line segments
-        #disable probabilistic hough lines because it returns 
         lines = cv2.HoughLinesP(grid, rho, theta, threshold, np.array([]), min_line_length, max_line_gap)
-        #lines = cv2.HoughLines(grid, rho, theta, threshold, np.array([]), min_line_length, max_line_gap)
         boxes=list()
 
         if lines is None:
@@ -107,15 +100,13 @@ class DetectSquare(object):
             return None
 
         for line in lines:
-            #print("line: ")
-            #print(line)
-            for x1, y1, x2, y2 in line:
+            for x1,y1,x2,y2 in line:
                 
                 length=(math.sqrt((x2-x1)**2+(y2-y1)**2))*resolution
-                #print(length)
+                print(length)
 
-                #print(self.collinear([x1, y1, x2, y2], line))
-                if length>(self.box_length-tolerance) and length<(self.box_length+tolerance) and not self.collinear([x1, y1, x2, y2], lines, resolution):
+
+                if length>(self.box_length-tolerance)and length<(self.box_length+tolerance):
                     #this is box's edge
                     
                     d=self.box_length/(2*resolution)
@@ -125,7 +116,7 @@ class DetectSquare(object):
                     y_mid=(y2+y1)/2
                     x_mid=(x2+x1)/2
                     #extract center
-                    #print(x_mid*resolution, y_mid*resolution, theta*180/math.pi)
+                    print(x_mid*resolution, y_mid*resolution, theta*180/math.pi)
 
                     del_y=d*math.sin(theta)
                     del_x=d*math.cos(theta)
@@ -145,20 +136,8 @@ class DetectSquare(object):
 
                     edge_x=self.x0+(origin-x_mid)*resolution
                     edge_y=self.y0+(origin-y_mid)*resolution
-
-                    mid_heading=math.atan2(edge_y-self.y0, edge_x-self.x0)
-
-                    if mid_heading>theta:
-                        direction=theta-math.pi/2
-                    else:
-                        direction=theta+math.pi/2
-
-                    msg.pose.pose.position.x = edge_x
-                    msg.pose.pose.position.y = edge_y
-                    q_angle = quaternion_from_euler(0, 0, direction)
-                    msg.pose.pose.orientation = Quaternion(*q_angle)
-                    self.box_pose_pub.publish(msg)
-                    #boxes.append([self.x0+a*math   .sin(self.yaw0)+b*math.cos(self.yaw0), self.y0-a*math.cos(self.yaw0)+b*math.sin(self.yaw0)])
+                    
+                    #boxes.append([self.x0+a*math.sin(self.yaw0)+b*math.cos(self.yaw0), self.y0-a*math.cos(self.yaw0)+b*math.sin(self.yaw0)])
                     boxes.append([edge_x, edge_y])
         #y-axis
         #boxes.append([self.x0, self.y0+1])
@@ -167,34 +146,11 @@ class DetectSquare(object):
         #return global positions of boxes
         return boxes
 
-    def collinear(self, ref_line, lines, resolution):
-        threshold=0.02
-        x1, y1, x2, y2 =ref_line
-
-        #if abs(x2-x1)<0.001:
-        #    return False
-        m0=(y2-y1)/(x2-x1)
-        b0=y1-m0*x1
-
-        for line in lines:
-            #print("line: ")
-            #print(line)
-            for x1, y1, x2, y2 in line:
-
-
-                #if abs(x2-x1)<0.001:
-                #    continue
-                length=(math.sqrt((x2-x1)**2+(y2-y1)**2))*resolution
-                m1=(y2-y1)/(x2-x1)
-                b1=y1-m1*x1
-                
-                if abs(m1-m0)<threshold and abs(b1-b0)<threshold and length>self.box_length:
-                    return True
-
-        return False
-
     def pixToLaser(self, px, py):
         return self.mid_point+py, self.mid_point-px
+
+
+
 
     def printBox(self, box):
         self.boxes.points=list()
@@ -212,6 +168,8 @@ class DetectSquare(object):
 
             self.boxes.points.append(p)
             self.boxes_pub.publish(self.boxes)
+
+
 
     def initMarker(self):
         # Set up our waypoint markers
