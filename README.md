@@ -1,7 +1,10 @@
 Project_Bixi
 ============
 Bixi robot for ICAR Robomasters 2017 competition
+
 creator: Ren Ye (renye.china@gmail.com)
+
+**This repository is INACTIVE**, please see [reinaldo](https://github.com/reinaldomaslim/Project_Bixi)'s repository for the latest
 
 
 Changelog
