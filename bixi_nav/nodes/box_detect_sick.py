@@ -1,10 +1,8 @@
 #!/usr/bin/env python
 
 """ Reinaldo
-    26-02-17
-    Calibrated for RPLIDAR
-    cable side=x
-    z is to sky
+    07-04-17
+    calibrated for SICK lms100 laser 270 range upside down
 """
 import rospy
 import actionlib
@@ -24,6 +22,7 @@ class DetectSquare(object):
     x0, y0, yaw0= 0, 0, 0
     currentScan=LaserScan()
     box_length=0.2
+    isUpsideDown=True
 
     def __init__(self, nodename):
         rospy.init_node(nodename, anonymous=False)
@@ -41,88 +40,54 @@ class DetectSquare(object):
             rate.sleep()
 
     def scanCallback(self, msg):
-        window_length=2
-        resolution=0.02
-        size=window_length/resolution
-        mid_point=int(size/2)
 
-        laserGrid=np.zeros((size, size), dtype=np.uint8)
 
-        for i in range(len(msg.ranges)):
-            if msg.ranges[i]<window_length/2:
-                theta=i*msg.angle_increment#-math.pi/4
-                d=msg.ranges[i]
-                x=int(d*math.cos(theta)/resolution)+mid_point
-                y=int(d*math.sin(theta)/resolution)+mid_point
+        laserLabel=list()
+        count=0
+        members=0
 
-                laserGrid[x][y]=1
-        
-        self.boxes_position=self.detectBox(laserGrid, resolution)
-        print(self.boxes_position)
+        if self.isUpsideDown is True:
+            for i in range(1, len(msg.ranges)):
+                
+                if abs(msg.ranges[i]-msg.ranges[i-1])>0.05:
+                    
+                    if members<5:
+                        members=0
+                        continue
+                    members=0
+                    laserLabel.append([count, i])
+                    count=i
+                members+=1
 
-        #self.printBox([[0, 1]])
+        self.boxes_position=self.detectBox(msg, laserLabel)
         self.printBox(self.boxes_position)
 
-    def detectBox(self, grid, resolution):
-        origin=int(grid.shape[0]/2)
 
-        #extract lines in rolling window
-        rho = 1 # distance resolution in pixels of the Hough grid
-        theta = np.pi/180 # angular resolution in radians of the Hough grid
-        threshold = 5 # minimum number of votes (intersections in Hough grid cell)
-        min_line_length = 4 # minimum number of pixels making up a line
-        max_line_gap = 1  # maximum gap in pixels between connectable line segments
-        tolerance=0.03
-        # Run Hough on edge detected image
-        # Output "lines" is an array containing endpoints of detected line segments
-        lines = cv2.HoughLinesP(grid, rho, theta, threshold, np.array([]), min_line_length, max_line_gap)
+
+    def detectBox(self, msg, laserLabel):
+        tolerance=0.05
         boxes=list()
 
-        if lines is None:
-            return None
+        for x in laserLabel:
+            #check their length 
+            theta=abs((x[1]-x[0])*msg.angle_increment)
+            l1=msg.ranges[x[0]]
+            l2=msg.ranges[x[1]]
 
-        for line in lines:
+            length=math.sqrt(l1**2+l2**2-2*l1*l2*math.cos(theta))
+            #print(length)
+            if length>(self.box_length-tolerance) and length<(self.box_length+tolerance):
+                alpha1=3*math.pi/4-x[0]*msg.angle_increment
+                x1, y1=l1*math.cos(alpha1), l1*math.sin(alpha1)
 
-            for x1,y1,x2,y2 in line:
-                #print(line)
-                length=math.sqrt((x2-x1)**2+(y2-y1)**2)*resolution
-                print length
-                if length>self.box_length-tolerance and length<self.box_length+tolerance:
-                    #this is box's edge
-                    d=self.box_length/(2*resolution)
-                    theta=math.atan2(x2-x1, y2-y1)+math.pi/2 #angle of mid-center
-                    #print(x1, y1)
-                    #print(x2, y2)
-                    x_mid=(x2+x1)/2
-                    y_mid=(y2+y1)/2
-                    #extract center
-                    print(x_mid, y_mid)
+                alpha2=3*math.pi/4-x[1]*msg.angle_increment
+                x2, y2=l2*math.cos(alpha2), l2*math.sin(alpha2)
 
-                    del_y=d*math.sin(theta)
-                    del_x=d*math.cos(theta)
+                x_mid, y_mid= self.x0+(x1+x2)/2, self.y0+(y1+y2)/2
 
-                    if math.sqrt((x_mid+del_x-origin)**2+(y_mid+del_y-origin)**2)>math.sqrt((x_mid-origin)**2+(y_mid-origin)**2):
-                        x_c=x_mid+del_x
-                        y_c=y_mid+del_y
-                    else:
-                        x_c=x_mid-del_x
-                        y_c=y_mid-del_y
+                boxes.append([x_mid, y_mid])
 
-
-                    edge_x=self.x0+(origin-y_mid)*resolution
-                    edge_y=self.y0+(origin-x_mid)*resolution
-
-                    center_x=self.x0+(origin-y_c)*resolution
-                    center_y=self.y0+(origin-x_c)*resolution
-
-                    boxes.append([center_x, center_y])
-                    #boxes.append([edge_x, edge_y])
-
-        
-        #print("boxes position:", boxes)
-        #return global positions of boxes
         return boxes
-
 
     def printBox(self, box):
         self.boxes.points=list()
