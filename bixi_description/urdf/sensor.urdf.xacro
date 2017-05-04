@@ -1,0 +1,130 @@
+<?xml version="1.0"?>
+<!-- Revolute-Revolute Manipulator -->
+<robot name="bixi" xmlns:xacro="http://www.ros.org/wiki/xacro">
+    <!-- Constants for robot dimensions -->
+    <xacro:property name="M_PI" value="3.1415926535897931"/>
+
+    <!-- this section must be changed according to the real robot -->
+    <!-- imu dimension -->
+    <property name="imu_mass" value="10" />
+    <property name="imu_w" value="10" />
+    <property name="imu_l" value="10" />
+    <property name="imu_h" value="10" />
+    <!-- imu_position -->
+    <property name="imu_x" value="0.8" />
+    <property name="imu_y" value="0.4" />
+    <property name="imu_z" value="0.1" />
+    <property name="imu_yaw" value="0" />
+
+    <!-- lidar dimension -->
+    <property name="lidar_mass" value="10" />
+    <property name="lidar_r" value="10" />
+    <property name="lidar_l" value="10" />
+    <!-- lidar_position -->
+    <property name="lidar_x" value="0.8" />
+    <property name="lidar_y" value="0.4" />
+    <property name="lidar_z" value="0.1" />
+    <property name="lidar_yaw" value="0" />
+
+    <!-- encoder dimension -->
+    <property name="encoder_mass" value="10" />
+    <property name="encoder_w" value="10" />
+    <property name="encoder_l" value="10" />
+    <property name="encoder_h" value="10" />
+    <!-- encoder_position -->
+    <property name="encoder_x" value="0.8" />
+    <property name="encoder_y" value="0.4" />
+    <property name="encoder_z" value="0.1" />
+    <property name="encoder_yaw" value="0" />
+
+    <!-- imu link wrt base link -->
+    <joint name="imu_joint" type="fixed">
+        <origin xyz="${imu_x} ${imu_y} ${imu_z}" rpy="0 0 ${imu_yaw}" />
+        <parent link="base_link" />
+        <child link="imu_link" />
+    </joint>
+
+    <link name="imu_link">
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <box size="${imu_w} ${imu_l} ${imu_h}"/>
+            </geometry>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <box size="${imu_w} ${imu_l} ${imu_h}"/>
+            </geometry>
+        </collision>
+        <inertial>
+            <mass value="${imu_mass}" />
+            <origin xyz="0 0 0" />
+            <inertia ixx="${1/12*imu_mass*(imu_x*imu_x + imu_z*imu_z)}"
+                iyy="${1/12*imu_mass*(imu_y*imu_y + imu_z*imu_z)}"
+                izz="${1/12*imu_mass*(imu_y*imu_y + imu_x*imu_x)}"
+                ixy="0" ixz="0" iyz="0" />
+        </inertial>
+    </link>
+
+    <!-- lidar link wrt base link -->
+    <joint name="lidar_joint" type="fixed">
+        <origin xyz="${lidar_x} ${lidar_y} ${lidar_z}" rpy="0 0 ${lidar_yaw}" />
+        <parent link="base_link" />
+        <child link="lidar_link" />
+    </joint>
+
+    <link name="lidar_link">
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <cylinder length="${lidar_l}" radius="${lidar_r}" />
+            </geometry>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <cylinder length="${lidar_l}" radius="${lidar_r}" />
+            </geometry>
+        </collision>
+        <inertial>
+            <mass value="${lidar_mass}" />
+            <origin xyz="0 0 0" />
+            <inertia ixx="${1/12*lidar_mass*(3*lidar_r*lidar_r + lidar_l*lidar_l)}"
+                iyy="${1/12*lidar_mass*(3*lidar_r*lidar_r+ lidar_l*lidar_l)}"
+                izz="${1/2*lidar_mass*lidar_r*lidar_r}"
+                ixy="0" ixz="0" iyz="0" />
+        </inertial>
+    </link>
+
+    <!-- encoder link wrt base link -->
+    <joint name="encoder_joint" type="fixed">
+        <origin xyz="${encoder_x} ${encoder_y} ${encoder_z}" rpy="0 0 ${encoder_yaw}" />
+        <parent link="base_link" />
+        <child link="encoder_link" />
+    </joint>
+
+    <link name="encoder_link">
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <box size="${encoder_w} ${encoder_l} ${encoder_h}"/>
+            </geometry>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <box size="${encoder_w} ${encoder_l} ${encoder_h}"/>
+            </geometry>
+        </collision>
+        <inertial>
+            <mass value="${encoder_mass}" />
+            <origin xyz="0 0 0" />
+            <inertia ixx="${1/12*encoder_mass*(encoder_x*encoder_x + encoder_z*encoder_z)}"
+                iyy="${1/12*encoder_mass*(encoder_y*encoder_y + encoder_z*encoder_z)}"
+                izz="${1/12*encoder_mass*(encoder_y*encoder_y + encoder_x*encoder_x)}"
+                ixy="0" ixz="0" iyz="0" />
+        </inertial>
+    </link>
+
+</robot>
