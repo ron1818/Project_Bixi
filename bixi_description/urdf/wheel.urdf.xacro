@@ -1,5 +1,7 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="wheel">
+
+    <!-- this section must be changed according to the real robot -->
     <!-- Wheel Properties -->
     <xacro:property name="M_PI" value="3.1415926535897931"/>
     <xacro:property name="wheel_mass" value="0.158" />

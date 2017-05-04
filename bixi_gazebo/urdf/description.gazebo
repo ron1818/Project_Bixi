@@ -15,7 +15,7 @@
             <odometryTopic>odometry/gazebo</odometryTopic>
             <odometryFrame>odom</odometryFrame>
             <odometryRate>20.0</odometryRate>
-            <robotBaseFrame>fakebase</robotBaseFrame>
+            <robotBaseFrame>base_footprint</robotBaseFrame>
         </plugin>
     </gazebo>
     <!--gazebo reference="base_link">
