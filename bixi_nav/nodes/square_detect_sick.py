@@ -31,7 +31,7 @@ class DetectSquare(object):
 
         rospy.Subscriber("/odometry/filtered", Odometry, self.odom_callback, queue_size = 50)
         rospy.Subscriber("/scan", LaserScan, self.scanCallback, queue_size = 50)
-        self.box_pose_pub=rospy.Publisher("/box_pose", Odometry, queue_size=10)
+        self.box_pose_pub=rospy.Publisher("/box_pose", Pose, queue_size=10)
 
         rate=rospy.Rate(10)
     
@@ -84,9 +84,8 @@ class DetectSquare(object):
 
 
     def detectBox(self, grid, resolution):
-        msg=Odometry()
-        msg.header.frame_id = "map"
-        msg.child_frame_id = "odom"
+        msg=Pose()
+
         origin=int(grid.shape[0]/2)
         #extract lines in rolling window
         rho = 1 # distance resolution in pixels of the Hough grid
@@ -127,22 +126,6 @@ class DetectSquare(object):
                     #extract center
                     #print(x_mid*resolution, y_mid*resolution, theta*180/math.pi)
 
-                    del_y=d*math.sin(theta)
-                    del_x=d*math.cos(theta)
-
-                    if math.sqrt((x_mid+del_x-origin)**2+(y_mid+del_y-origin)**2)>math.sqrt((x_mid-origin)**2+(y_mid-origin)**2):
-                        x_c=x_mid+del_x
-                        y_c=y_mid+del_y
-                    else:
-                        x_c=x_mid-del_x
-                        y_c=y_mid-del_y
-
-                    #print(x_c, y_c)
-                    #print(x_mid, y_mid)
-                    #print((x_mid-origin)*resolution, (y_mid-origin)*resolution)
-                    a=(x_c-origin)*resolution
-                    b=(y_c-origin)*resolution
-
                     edge_x=self.x0+(origin-x_mid)*resolution
                     edge_y=self.y0+(origin-y_mid)*resolution
 
@@ -153,13 +136,19 @@ class DetectSquare(object):
                     else:
                         direction=theta+math.pi/2
 
-                    msg.pose.pose.position.x = edge_x
-                    msg.pose.pose.position.y = edge_y
+
+
+                    center_x=edge_x-self.box_length*math.cos(direction)/2
+                    center_y=edge_y-self.box_length*math.sin(direction)/2
+
+                    msg.position.x = edge_x
+                    msg.position.y = edge_y
                     q_angle = quaternion_from_euler(0, 0, direction)
-                    msg.pose.pose.orientation = Quaternion(*q_angle)
+                    msg.orientation = Quaternion(*q_angle)
                     self.box_pose_pub.publish(msg)
+
                     #boxes.append([self.x0+a*math   .sin(self.yaw0)+b*math.cos(self.yaw0), self.y0-a*math.cos(self.yaw0)+b*math.sin(self.yaw0)])
-                    boxes.append([edge_x, edge_y])
+                    boxes.append([center_x, center_y])
         #y-axis
         #boxes.append([self.x0, self.y0+1])
 
