@@ -11,14 +11,14 @@ import math
 import cv2
 
 from actionlib_msgs.msg import *
-from geometry_msgs.msg import Pose, Point, Quaternion, Twist
+from geometry_msgs.msg import Pose, Point, Quaternion, Twist, PoseStamped
 from sensor_msgs.msg import RegionOfInterest, CameraInfo, LaserScan
 from nav_msgs.msg import Odometry
 from tf.transformations import quaternion_from_euler, euler_from_quaternion
 from visualization_msgs.msg import Marker
 
 
-class DetectSquare(object):
+class FindEdges(object):
     x0, y0, yaw0= 0, 0, 0
     currentScan=LaserScan()
     box_length=0.2
@@ -31,7 +31,7 @@ class DetectSquare(object):
 
         rospy.Subscriber("/odometry/filtered", Odometry, self.odom_callback, queue_size = 50)
         rospy.Subscriber("/scan", LaserScan, self.scanCallback, queue_size = 50)
-        self.box_pose_pub=rospy.Publisher("/box_pose", Pose, queue_size=10)
+        self.box_pose_pub=rospy.Publisher("/edge", PoseStamped, queue_size=10)
 
         rate=rospy.Rate(10)
     
@@ -41,7 +41,7 @@ class DetectSquare(object):
             rate.sleep()
 
     def scanCallback(self, msg):
-        window_length=10
+        window_length=2
 
         resolution=0.01
         res=resolution*1
@@ -52,7 +52,7 @@ class DetectSquare(object):
         laserGrid=np.zeros((size, size), dtype=np.uint8)
 
         if self.isUpsideDown is True:
-            for i in range(len(msg.ranges)):
+            for i in range(len(msg.ranges)-180):
                 
                 if msg.ranges[i]<window_length/2:
                     theta=3*math.pi/4-i*msg.angle_increment
@@ -84,7 +84,7 @@ class DetectSquare(object):
 
 
     def detectBox(self, grid, resolution):
-        msg=Pose()
+        msg=PoseStamped()
 
         origin=int(grid.shape[0]/2)
         #extract lines in rolling window
@@ -93,7 +93,7 @@ class DetectSquare(object):
         threshold = 10 # minimum number of votes (intersections in Hough grid cell)
         min_line_length = 5 # minimum number of pixels making up a line
         max_line_gap = 50  # maximum gap in pixels between connectable line segments
-        tolerance=0.05
+        tolerance=0.02
         # Run Hough on edge detected image
         # Output "lines" is an array containing endpoints of detected line segments
         #disable probabilistic hough lines because it returns 
@@ -140,15 +140,16 @@ class DetectSquare(object):
 
                     center_x=edge_x-self.box_length*math.cos(direction)/2
                     center_y=edge_y-self.box_length*math.sin(direction)/2
-
-                    msg.position.x = edge_x
-                    msg.position.y = edge_y
+                    msg.header.frame_id="odom"
+                    msg.pose.position.x = edge_x
+                    msg.pose.position.y = edge_y
                     q_angle = quaternion_from_euler(0, 0, direction)
-                    msg.orientation = Quaternion(*q_angle)
+                    msg.pose.orientation = Quaternion(*q_angle)
                     self.box_pose_pub.publish(msg)
 
                     #boxes.append([self.x0+a*math   .sin(self.yaw0)+b*math.cos(self.yaw0), self.y0-a*math.cos(self.yaw0)+b*math.sin(self.yaw0)])
                     boxes.append([center_x, center_y])
+                    #boxes.append([1, 1])
         #y-axis
         #boxes.append([self.x0, self.y0+1])
 
@@ -243,6 +244,6 @@ class DetectSquare(object):
 
 if __name__ == '__main__':
     try:
-        DetectSquare(nodename="detect_square")
+        FindEdges(nodename="find_edges")
     except rospy.ROSInterruptException:
         rospy.loginfo("Boxes detection finished.")
