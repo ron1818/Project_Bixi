@@ -9,6 +9,7 @@ import actionlib
 import numpy as np
 import math
 import cv2
+import tf
 
 from actionlib_msgs.msg import *
 from geometry_msgs.msg import Pose, Point, Quaternion, Twist, PoseStamped
@@ -26,10 +27,10 @@ class FindEdges(object):
 
     def __init__(self, nodename):
         rospy.init_node(nodename, anonymous=False)
-    
+        self.listener=tf.TransformListener()
         self.initMarker()
 
-        rospy.Subscriber("/odometry/filtered", Odometry, self.odom_callback, queue_size = 50)
+        rospy.Subscriber("/odometry", Odometry, self.odom_callback, queue_size = 50)
         rospy.Subscriber("/scan", LaserScan, self.scanCallback, queue_size = 50)
         self.box_pose_pub=rospy.Publisher("/edge", PoseStamped, queue_size=10)
 
@@ -86,6 +87,14 @@ class FindEdges(object):
     def detectBox(self, grid, resolution):
         msg=PoseStamped()
 
+        #laser tf offset
+        
+        #now = rospy.Time.now() - rospy.Duration(5.0)
+        #self.listener.waitForTransform("/odom", "/laser", now, rospy.Duration(1.0))
+        
+        #(trans,rot) = self.listener.lookupTransform('/odom', '/laser', now)
+        trans=[0.26, 0.25]
+
         origin=int(grid.shape[0]/2)
         #extract lines in rolling window
         rho = 1 # distance resolution in pixels of the Hough grid
@@ -118,18 +127,23 @@ class FindEdges(object):
                     #this is box's edge
                     
                     d=self.box_length/(2*resolution)
-                    theta=math.atan2(y2-y1, x2-x1)#+math.pi/2 #angle of mid-center
+                    #theta is wrt body heading, to convert to map: add with body heading
+                    theta=math.atan2(y2-y1, x2-x1)+self.yaw0#+math.pi/2 #angle of mid-center
                     #print(x1, y1)
                     #print(x2, y2)
                     y_mid=(y2+y1)/2
                     x_mid=(x2+x1)/2
                     #extract center
                     #print(x_mid*resolution, y_mid*resolution, theta*180/math.pi)
+                    #origin of lidar wrt to map/odom
+                    laser_x0=self.x0+trans[0]*math.cos(self.yaw0)-trans[1]*math.sin(self.yaw0)
+                    laser_y0=self.y0+trans[0]*math.sin(self.yaw0)+trans[1]*math.cos(self.yaw0)
 
-                    edge_x=self.x0+(origin-x_mid)*resolution
-                    edge_y=self.y0+(origin-y_mid)*resolution
+                    #position incorrect if yaw0 is not 0
+                    edge_x=laser_x0+((origin-x_mid)*math.cos(self.yaw0)-(origin-y_mid)*math.sin(self.yaw0))*resolution
+                    edge_y=laser_y0+((origin-x_mid)*math.sin(self.yaw0)+(origin-y_mid)*math.cos(self.yaw0))*resolution
 
-                    mid_heading=math.atan2(edge_y-self.y0, edge_x-self.x0)
+                    mid_heading=math.atan2(edge_y-laser_y0, edge_x-laser_x0)
 
                     if mid_heading>theta:
                         direction=theta-math.pi/2

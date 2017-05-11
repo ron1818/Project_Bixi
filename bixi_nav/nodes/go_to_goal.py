@@ -56,7 +56,7 @@ class GoToGoal(object):
 
     def translate(self, x_target, y_target):
         msg=Twist()
-        vel=200
+        vel=200 #must be small to avoid jerking, and secondly to avoid switching surface
         distance_threshold=0.1
 
         x_error=(x_target-self.x0)*math.cos(self.yaw0)+(y_target-self.y0)*math.sin(self.yaw0)
