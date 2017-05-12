@@ -9,16 +9,17 @@ import actionlib
 import numpy as np
 import math
 import cv2
+import tf
 
 from actionlib_msgs.msg import *
-from geometry_msgs.msg import Pose, Point, Quaternion, Twist
+from geometry_msgs.msg import Pose, Point, Quaternion, Twist, PoseStamped
 from sensor_msgs.msg import RegionOfInterest, CameraInfo, LaserScan
 from nav_msgs.msg import Odometry
 from tf.transformations import quaternion_from_euler, euler_from_quaternion
 from visualization_msgs.msg import Marker
 
 
-class DetectSquare(object):
+class FindEdges(object):
     x0, y0, yaw0= 0, 0, 0
     currentScan=LaserScan()
     box_length=0.2
@@ -26,12 +27,12 @@ class DetectSquare(object):
 
     def __init__(self, nodename):
         rospy.init_node(nodename, anonymous=False)
-    
+        self.listener=tf.TransformListener()
         self.initMarker()
 
-        rospy.Subscriber("/odometry/filtered", Odometry, self.odom_callback, queue_size = 50)
+        rospy.Subscriber("/odometry", Odometry, self.odom_callback, queue_size = 50)
         rospy.Subscriber("/scan", LaserScan, self.scanCallback, queue_size = 50)
-        self.box_pose_pub=rospy.Publisher("/box_pose", Odometry, queue_size=10)
+        self.box_pose_pub=rospy.Publisher("/edge", PoseStamped, queue_size=10)
 
         rate=rospy.Rate(10)
     
@@ -41,7 +42,7 @@ class DetectSquare(object):
             rate.sleep()
 
     def scanCallback(self, msg):
-        window_length=10
+        window_length=2
 
         resolution=0.01
         res=resolution*1
@@ -52,7 +53,7 @@ class DetectSquare(object):
         laserGrid=np.zeros((size, size), dtype=np.uint8)
 
         if self.isUpsideDown is True:
-            for i in range(len(msg.ranges)):
+            for i in range(len(msg.ranges)-180):
                 
                 if msg.ranges[i]<window_length/2:
                     theta=3*math.pi/4-i*msg.angle_increment
@@ -84,9 +85,16 @@ class DetectSquare(object):
 
 
     def detectBox(self, grid, resolution):
-        msg=Odometry()
-        msg.header.frame_id = "map"
-        msg.child_frame_id = "odom"
+        msg=PoseStamped()
+
+        #laser tf offset
+        
+        #now = rospy.Time.now() - rospy.Duration(5.0)
+        #self.listener.waitForTransform("/odom", "/laser", now, rospy.Duration(1.0))
+        
+        #(trans,rot) = self.listener.lookupTransform('/odom', '/laser', now)
+        trans=[0.26, 0.25]
+
         origin=int(grid.shape[0]/2)
         #extract lines in rolling window
         rho = 1 # distance resolution in pixels of the Hough grid
@@ -94,7 +102,7 @@ class DetectSquare(object):
         threshold = 10 # minimum number of votes (intersections in Hough grid cell)
         min_line_length = 5 # minimum number of pixels making up a line
         max_line_gap = 50  # maximum gap in pixels between connectable line segments
-        tolerance=0.05
+        tolerance=0.02
         # Run Hough on edge detected image
         # Output "lines" is an array containing endpoints of detected line segments
         #disable probabilistic hough lines because it returns 
@@ -119,47 +127,43 @@ class DetectSquare(object):
                     #this is box's edge
                     
                     d=self.box_length/(2*resolution)
-                    theta=math.atan2(y2-y1, x2-x1)#+math.pi/2 #angle of mid-center
+                    #theta is wrt body heading, to convert to map: add with body heading
+                    theta=math.atan2(y2-y1, x2-x1)+self.yaw0#+math.pi/2 #angle of mid-center
                     #print(x1, y1)
                     #print(x2, y2)
                     y_mid=(y2+y1)/2
                     x_mid=(x2+x1)/2
                     #extract center
                     #print(x_mid*resolution, y_mid*resolution, theta*180/math.pi)
+                    #origin of lidar wrt to map/odom
+                    laser_x0=self.x0+trans[0]*math.cos(self.yaw0)-trans[1]*math.sin(self.yaw0)
+                    laser_y0=self.y0+trans[0]*math.sin(self.yaw0)+trans[1]*math.cos(self.yaw0)
 
-                    del_y=d*math.sin(theta)
-                    del_x=d*math.cos(theta)
+                    #position incorrect if yaw0 is not 0
+                    edge_x=laser_x0+((origin-x_mid)*math.cos(self.yaw0)-(origin-y_mid)*math.sin(self.yaw0))*resolution
+                    edge_y=laser_y0+((origin-x_mid)*math.sin(self.yaw0)+(origin-y_mid)*math.cos(self.yaw0))*resolution
 
-                    if math.sqrt((x_mid+del_x-origin)**2+(y_mid+del_y-origin)**2)>math.sqrt((x_mid-origin)**2+(y_mid-origin)**2):
-                        x_c=x_mid+del_x
-                        y_c=y_mid+del_y
-                    else:
-                        x_c=x_mid-del_x
-                        y_c=y_mid-del_y
-
-                    #print(x_c, y_c)
-                    #print(x_mid, y_mid)
-                    #print((x_mid-origin)*resolution, (y_mid-origin)*resolution)
-                    a=(x_c-origin)*resolution
-                    b=(y_c-origin)*resolution
-
-                    edge_x=self.x0+(origin-x_mid)*resolution
-                    edge_y=self.y0+(origin-y_mid)*resolution
-
-                    mid_heading=math.atan2(edge_y-self.y0, edge_x-self.x0)
+                    mid_heading=math.atan2(edge_y-laser_y0, edge_x-laser_x0)
 
                     if mid_heading>theta:
                         direction=theta-math.pi/2
                     else:
                         direction=theta+math.pi/2
 
-                    msg.pose.pose.position.x = edge_x
-                    msg.pose.pose.position.y = edge_y
+
+
+                    center_x=edge_x-self.box_length*math.cos(direction)/2
+                    center_y=edge_y-self.box_length*math.sin(direction)/2
+                    msg.header.frame_id="odom"
+                    msg.pose.position.x = edge_x
+                    msg.pose.position.y = edge_y
                     q_angle = quaternion_from_euler(0, 0, direction)
-                    msg.pose.pose.orientation = Quaternion(*q_angle)
+                    msg.pose.orientation = Quaternion(*q_angle)
                     self.box_pose_pub.publish(msg)
+
                     #boxes.append([self.x0+a*math   .sin(self.yaw0)+b*math.cos(self.yaw0), self.y0-a*math.cos(self.yaw0)+b*math.sin(self.yaw0)])
-                    boxes.append([edge_x, edge_y])
+                    boxes.append([center_x, center_y])
+                    #boxes.append([1, 1])
         #y-axis
         #boxes.append([self.x0, self.y0+1])
 
@@ -254,6 +258,6 @@ class DetectSquare(object):
 
 if __name__ == '__main__':
     try:
-        DetectSquare(nodename="detect_square")
+        FindEdges(nodename="find_edges")
     except rospy.ROSInterruptException:
         rospy.loginfo("Boxes detection finished.")

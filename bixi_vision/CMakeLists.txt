@@ -6,13 +6,21 @@ project(bixi_vision)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   cv_bridge
+  dynamic_reconfigure
   image_transport
   roscpp
+  roslaunch
   rospy
   sensor_msgs
   std_msgs
   tf
 )
+
+find_package(OpenCV REQUIRED)
+roslaunch_add_file_check(launch)
+
+set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
+set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -89,11 +97,9 @@ find_package(catkin REQUIRED COMPONENTS
 ##     and list every .cfg file to be processed
 
 ## Generate dynamic reconfigure parameters in the 'cfg' folder
-# generate_dynamic_reconfigure_options(
-#   cfg/DynReconf1.cfg
-#   cfg/DynReconf2.cfg
-# )
-
+generate_dynamic_reconfigure_options(
+  cfg/building_blocks.cfg
+)
 ###################################
 ## catkin specific configuration ##
 ###################################
@@ -119,7 +125,9 @@ catkin_package(
 # include_directories(include)
 include_directories(
   ${catkin_INCLUDE_DIRS}
+  ${OpenCV_INCLUDE_DIRS}
 )
+
 
 ## Declare a C++ library
 # add_library(bixi_vision
@@ -132,16 +140,14 @@ include_directories(
 # add_dependencies(bixi_vision ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Declare a C++ executable
-# add_executable(bixi_vision_node src/bixi_vision_node.cpp)
+add_executable(arrow_detection src/arrow_detection.cpp)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
-# add_dependencies(bixi_vision_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(arrow_detection ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_gencfg)
 
 ## Specify libraries to link a library or executable target against
-# target_link_libraries(bixi_vision_node
-#   ${catkin_LIBRARIES}
-# )
+target_link_libraries(arrow_detection ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
 
 #############
 ## Install ##

@@ -20,7 +20,7 @@ from tf.transformations import quaternion_from_euler, euler_from_quaternion
 from visualization_msgs.msg import Marker
 
 
-class DetectSquare(object):
+class FindEdges(object):
     x0, y0, yaw0= 0, 0, 0
     currentScan=LaserScan()
     box_length=0.2
@@ -184,6 +184,6 @@ class DetectSquare(object):
 
 if __name__ == '__main__':
     try:
-        DetectSquare(nodename="detect_square")
+        FindEdges(nodename="find_edges")
     except rospy.ROSInterruptException:
         rospy.loginfo("Boxes detection finished.")
